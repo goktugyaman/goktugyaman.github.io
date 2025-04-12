@@ -1,0 +1,75 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2639
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww28600\viewh14860\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 # Google Distance Matrix API\
+\
+This project fetches distances for unique origin-destination pairs using the Google Maps Distance Matrix API. It is designed to support analysis of warehouse efficiencies by integrating distance data into an SAP HANA environment.\
+\
+## :information_source: Description\
+\
+The main goal of this project is to enhance logistics and warehouse operations by collecting accurate travel distances between various locations. The scripts query a database, fetch distance data from the Google Maps API, and store the results for further analysis.\
+\
+## :gear: Usage Instructions\
+\
+1. **SAP HANA Integration**:\
+   - Make sure you have access to your SAP HANA environment.\
+   - Modify the SQL queries in the scripts to match your data schema.\
+   - Ensure the necessary connection strings and credentials are correctly configured.\
+\
+2. **Database Table**:\
+   - A table named `DWDATA` is required to write the output of the API responses.\
+\
+3. **Running the Scripts**:\
+   - Use `Origin_Destination_List.py` to extract and prepare the list of unique origin-destination pairs.\
+   - Run `Route_API.py` to call the Google Maps Distance Matrix API and insert the results into the database.\
+\
+4. **Dependencies**:\
+   - Python libraries: `requests`, `pandas`, `pyhdb` (or your SAP HANA driver of choice).\
+   - Google Maps API key with Distance Matrix access.\
+\
+## :world_map: API Used\
+\
+- [Google Maps Distance Matrix API](https://developers.google.com/maps/documentation/distance-matrix)\
+\
+## :rocket: Optimization: Two-Level Caching\
+\
+To minimize redundant API requests and optimize token usage, the script uses two levels of caching:\
+\
+1. **In-Memory Cache (Per Run)** \'96 Skips pairs already processed during the current script run.\
+2. **Persistent Cache (Database)** \'96 Skips pairs that already exist in the distance table (`DWDATA`).\
+\
+### Example Logic:\
+\
+```python\
+# In-memory cache to track what's already processed in this run\
+processed_pairs = set()\
+\
+# Loop through origin-destination pairs\
+for origin, destination in origin_destination_list:\
+    pair_key = (origin, destination)\
+\
+    # Check in-memory cache\
+    if pair_key in processed_pairs:\
+        print("Skipping \'97 already processed in this run.")\
+        continue\
+\
+    # Check persistent cache (database table)\
+    if not existing_records_df[\
+        (existing_records_df["origin"] == origin) &\
+        (existing_records_df["destination"] == destination)\
+    ].empty:\
+        print("Skipping \'97 already exists in database.")\
+        continue\
+\
+    # Otherwise, call API and process\
+    distance_data = call_google_api(origin, destination)\
+\
+    # Add to in-memory cache\
+    processed_pairs.add(pair_key)\
+\
+    # Insert result into database...\
+}
